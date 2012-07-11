@@ -1028,7 +1028,7 @@ try:
 
     if amend_task and opts.show_list_after:
         # show the list after an action has taken place
-        GTasks.show_tasks(show, opts.lists, opts.bust_cache)
+        GTasks.show_tasks(show, opts.lists, False)
 
 except KeyboardInterrupt:
       # do nothing here
