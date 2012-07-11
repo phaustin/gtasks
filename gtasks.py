@@ -344,8 +344,6 @@ class GTasks:
         command = [GTasks._bin]
         command.extend(arguments)
         subprocess.Popen(command)
-        print command
-
 
     # generate a key (filename) for caching a list
     def _cache_key(self, title, show_data):
