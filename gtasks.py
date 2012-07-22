@@ -105,6 +105,9 @@ parser.add_argument('-sd', dest="show_task_deleted", action='store_true',
 parser.add_argument('-st', dest="show_totals", action='store_true',
     help='show list totals')
 
+parser.add_argument('-sto', dest="show_totals_only", action='store_true',
+    help='show list totals only, no tasks')
+
 parser.add_argument('-sdb', dest="show_due_max", action='store', nargs='?',
     help='show tasks due before <date>')
 
@@ -345,6 +348,7 @@ class GTasks:
         command.extend(arguments)
         subprocess.Popen(command)
 
+
     # generate a key (filename) for caching a list
     def _cache_key(self, title, show_data):
         title_hash = md5(str(title)).hexdigest()
@@ -467,10 +471,10 @@ class GTasks:
 
     # add a new task to a list
     def add_task(self, show, list, task):
-        self.confirm_or_exit('Add task: "' + task['title'] + '"')
         if not task['title']:
             self._feedback('Error, missing title. Task not added')
             return
+        self.confirm_or_exit('Add task: "' + task['title'] + '"')
         list = self._get_list(show, list)
         task['due'] = task['date']
 
@@ -607,6 +611,7 @@ class GTasks:
                         task_status = '  '
                         break
 
+        show_tasks = not show['display']['totals_only']
         shown_lists = 0
         shown_tasks = 0
         for list in lists:
@@ -618,7 +623,7 @@ class GTasks:
             print '-' * len(list.resource['title'])
             if task_count == 0:
                 print 'empty list'
-            if list.tasks:
+            if show_tasks and list.tasks:
                 for task in list.tasks:
                     shown_tasks = shown_tasks +1
                     gutter = ' ' * (int(len(str(max_list_width)))- int(len(str(task.position))))
@@ -646,7 +651,7 @@ class GTasks:
                             print notes_gutter + task.resource['notes'].replace('\n', '\n' + notes_gutter)
 
             print
-            if show['display']['totals']:
+            if show['display']['totals'] and task_count > 0:
                 self._print_totals(list.totals)
                 print
             shown_lists = shown_lists +1
@@ -657,7 +662,7 @@ class GTasks:
                 self._print_totals(self._combine_list_totals(lists))
                 print
 
-        if shown_tasks == 0:
+        if show_tasks and shown_tasks == 0:
             print 'no tasks found'
 
 
@@ -949,11 +954,15 @@ if opts.show_due_min or opts.show_due_max:
 if opts.show_due_min and not opts.show_due_max:
     sys.exit('Error, -sda must be used in combination with -sdb')
 
+if opts.show_totals_only:
+    opts.show_totals = True
+
 show = {
     'display': {
         'notes' : opts.show_task_notes,
         'when' : opts.show_task_when,
         'totals' : opts.show_totals,
+        'totals_only' : opts.show_totals_only,
         'empty_lists' : opts.show_empty_lists
         },
     'data' : {
