@@ -108,6 +108,9 @@ parser.add_argument('-st', dest="show_totals", action='store_true',
 parser.add_argument('-sto', dest="show_totals_only", action='store_true',
     help='show list totals only, no tasks')
 
+parser.add_argument('-sdo', dest="show_due_only", action='store_true',
+    help='show only overdue and due today tasks')
+
 parser.add_argument('-sdb', dest="show_due_max", action='store', nargs='?',
     help='show tasks due before <date>')
 
@@ -321,6 +324,8 @@ class GTasks:
         return {'found' : found_lists, 'missing' : missing_lists}
 
     # Update list(s) in subprocess
+    # Note: if a new argumen is added to gtasks that changes the list of tasks shown
+    # it must be added here so that the background update reflacts the option
     def _background_update(self, show, required_lists):
         arguments = ['-U', '-q']
         if not show['data']['complete']:
@@ -338,6 +343,8 @@ class GTasks:
         if show['data']['limit']:
             arguments.extend(['-lt'])
             arguments.extend([show['data']['limit']])
+        if show['data']['due_only']:
+            arguments.extend(['-sdo'])
         if required_lists:
             arguments.extend(['-l'])
             for list in required_lists:
@@ -616,6 +623,8 @@ class GTasks:
         shown_tasks = 0
         for list in lists:
             task_count = len(list.tasks)
+            if show['data']['due_only']:
+                task_count = list.totals['overdue'] + list.totals['due_today']
             if not show['display']['empty_lists'] and task_count == 0:
                 continue
             print
@@ -625,6 +634,9 @@ class GTasks:
                 print 'empty list'
             if show_tasks and list.tasks:
                 for task in list.tasks:
+                    if show['data']['due_only']:
+                        if task.due_status != 'overdue' and task.due_status != 'today':
+                            continue
                     shown_tasks = shown_tasks +1
                     gutter = ' ' * (int(len(str(max_list_width)))- int(len(str(task.position))))
                     status = task_status
@@ -971,7 +983,8 @@ show = {
         'hidden' : opts.show_task_hidden,
         'due_max' : interpret_date(opts.show_due_max),
         'due_min' : interpret_date(opts.show_due_min),
-        'limit' : (opts.show_limit)
+        'limit' : (opts.show_limit),
+        'due_only' : (opts.show_due_only)
     }
 }
 
