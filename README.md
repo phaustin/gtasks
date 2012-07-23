@@ -94,13 +94,18 @@ there is a date format, gtasks supports these values:
  - {last|next}{mon|tue|wed|thu|fri|sat|sun} examples: nextfri, mon, lasttue
  - *n* examples: 5 (for 5 days ahead), -5 (for 5 days back)
 
+to remove the due date for a task use th `-cw` option when editing the task: `gtasks -e 1 -cw`
+
     gtasks -st
 
 list tasks in the default lists and show totals for complete and due
 
     gtasks -L
 
-list all tasks in all lists
+list *all( tasks in *all lists*. Note that you cannot take an action on tasks returned
+from the `-L` option as it is a collection of lists. If you wanted to update a task
+in a list returned by `-L` you should use `-l <list title>` to specify the actual list
+it belongs to.
 
     gtasks -L -b
 

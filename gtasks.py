@@ -60,6 +60,9 @@ parser.add_argument('-n', dest="task_notes", action='store', nargs='?',
 parser.add_argument('-w', dest="task_date", action='store', nargs='?',
     help='set a task\'s date (used with add or edit task)')
 
+parser.add_argument('-cw', dest="clear_task_date", action='store_true',
+    help='clear a task\'s due date (used with edit task)')
+
 parser.add_argument('-c', dest="complete_task", type=int, action='store', nargs='?',
     help='toggle task <number>\'s complete status')
 
@@ -508,6 +511,8 @@ class GTasks:
         self.confirm_or_exit('Update task: "' + task.resource['title'] + '"')
 
         action = 'updated'
+        if edit_task['clear_date']:
+            task.resource['due'] = None
         if edit_task['toggle_complete']:
             if task.resource['status'] == 'completed':
                 action = 'marked incomplete'
@@ -992,6 +997,7 @@ task = {
     'title' : opts.task_title,
     'notes' : opts.task_notes,
     'date' : interpret_date(opts.task_date),
+    'clear_date' : opts.clear_task_date,
     'toggle_complete' : False,
     'toggle_delete' : False
 }
