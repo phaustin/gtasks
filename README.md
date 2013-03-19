@@ -1,8 +1,7 @@
 # GTasks
 
 gtasks is a command line client for the [google tasks api](https://developers.google.com/google-apps/tasks/) written in python, aimed at OSX (for keychain integration).
-It was written as a way to learn python, so the approach may be *unpythonic* in places,
-which I will correct as my experience in the language improves.
+It was written as a way to learn python.
 
 ## Requirements
 
@@ -122,7 +121,45 @@ As you can see, lots of options/flexability.
 
 ## TODO
 
- - add a dashboard output, the aim is to have something that can be added to my command prompt
+ - <del>add a dashboard output</del> Achievable via bash:
+
+```
+#!/bin/bash
+#
+TXTDEF='\033[0m'          # everything back to defaults
+TXTRED='\033[0;31;1m'     # red text
+TXTYEL='\033[0;33;1m'     # yellow text
+
+TOTALS=$(gtasks -b -L -sto | grep -A 2 "OVERALL")
+OVERDUE=$(echo $TOTALS | grep -o "Overdue: [0-9]\+;" | grep -o "[0-9]\+")
+TODAY=$(echo $TOTALS | grep -o "Due Today: [0-9]\+;" | grep -o "[0-9]\+")
+
+let TOTAL=OVERDUE+TODAY
+if [ $TOTAL != "0" ];then
+    if [ $TOTAL != "1" ];then
+        TP='s'
+    fi
+
+    if [ $OVERDUE != "0" ];then
+        OVERDUE_MSG="$TXTRED$OVERDUE overdue$TXTDEF"
+    fi
+    if [ $TODAY != "0" ];then
+        TODAY_MSG="$TXTYEL$TODAY due today$TXTDEF"
+    fi
+
+    if [ $OVERDUE != "0" ];then
+        MSG="$OVERDUE_MSG"
+        if [ $TODAY != "0" ];then
+            MSG="$MSG and $TODAY_MSG"
+        fi
+    elif [ $TODAY != "0" ];then
+        MSG="$TXTYEL$TODAY due today$TXTDEF"
+    fi
+
+    echo -e "You have $MSG task$TP"
+fi
+```
+
  - move tasks (note api does not support moving between tasks)
  - support indented tasks
 
