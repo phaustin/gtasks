@@ -45,7 +45,7 @@ parser.add_argument('-el', dest="edit_list", action='store', nargs=2,
 parser.add_argument('-dl', dest="delete_list", action='store', nargs='?',
     help='delete a list')
 
-parser.add_argument('-a', dest="add_task", action='store_true',
+parser.add_argument('-a', dest="add_task", action='store', nargs='?',
     help='add new task')
 
 parser.add_argument('-e', dest="edit_task", type=int, action='store', nargs='?',
@@ -973,6 +973,10 @@ if opts.show_due_min and not opts.show_due_max:
 
 if opts.show_totals_only:
     opts.show_totals = True
+
+if opts.add_task and not opts.task_title:
+    opts.task_title = opts.add_task
+    opts.add_task = True
 
 show = {
     'display': {
