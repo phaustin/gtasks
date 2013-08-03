@@ -126,6 +126,8 @@ As you can see, lots of options/flexability.
 ```
 #!/bin/bash
 #
+# gtasks_dashboard
+#
 TXTDEF='\033[0m'          # everything back to defaults
 TXTRED='\033[0;31;1m'     # red text
 TXTYEL='\033[0;33;1m'     # yellow text
@@ -160,8 +162,29 @@ if [ $TOTAL != "0" ];then
 fi
 ```
 
+optional crontab for gtasks_dashboard:
+
+```
+# Check for tasks
+# note may need to `source /full/path/to/home/dir/.bashrc;` before gtasks_dashboard
+0,30 * * * * gtasks_dashboard > /full/path/to/home/dir/.gtasks/dashboard
+function parse_tasks {
+  if [ -f $HOME/.gtasks/dashboard ]; then
+    cat $HOME/.gtasks/dashboard
+    echo -e "\r\n"
+    rm $HOME/.gtasks/dashboard 2> /dev/null
+    # introduce a random <1 second delay in an attempt to prevent multiple terms
+    # from trying to delete the file at the same time
+    # http://www.unix.com/shell-programming-scripting/7197-sleep-under-one-second.html
+    #perl -e "select(undef,undef,undef,.${RANDOM})"
+    #if [ -f $HOME/.gtasks/dashboard ]; then
+    #  rm $HOME/.gtasks/dashboard
+    #fi
+  fi
+}
+```
+
  - move tasks (note api does not support moving between tasks)
  - support indented tasks
-
 
 
