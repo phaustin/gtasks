@@ -50,8 +50,7 @@ Back on the `API Access` tab you will see populated values for `Client ID`,
 
 ## Usage
 
-Assuming you have the `gtasks.py` file somewhere that's in your `$PATH`, then `gtasks.py -h` will show usage instructions.
-In the below examples I have a symlink `gtasks` that points to my location of `gtasks.py`
+Assuming you have the `gtasks` file somewhere that's in your `$PATH`, then `gtasks -h` will show usage instructions.
 
 gtasks is designed to be very flexibe and supports a number of options. Here are some examples:
 
