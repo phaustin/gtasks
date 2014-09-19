@@ -115,6 +115,11 @@ list all tasks in all lists, that are due before tomorrow and after today, don't
 show empty lists. Essentially this shows all tasks due today.
 
 
+And list gtasks that are due:
+```
+gtasks -L -sdo -dse'
+```
+
 As you can see, lots of options/flexability.
 
 
