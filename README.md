@@ -117,7 +117,7 @@ show empty lists. Essentially this shows all tasks due today.
 
 And list gtasks that are due:
 ```
-gtasks -L -sdo -dse'
+gtasks -L -sdo -dse
 ```
 
 As you can see, lots of options/flexability.
