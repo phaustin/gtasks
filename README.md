@@ -40,9 +40,9 @@ click next and select "Installed application" and click "Create client ID".
 Back on the `API Access` tab you will see populated values for `Client ID`,
 `Client secret` and `API key`. Take a note of these values as you will use them with `keychain`:
 
-    keychain -s <Client ID> gtasks_id
-    keychain -s <Client secret> gtasks_secret
-    keychain -s <API key> gtasks_key
+    keychain -s gtasks_id <Client ID>
+    keychain -s gtasks_secret <Client secret>
+    keychain -s gtasks_key <API key>
 
 ## Installation
 
