@@ -60,7 +60,7 @@ gtasks is designed to be very flexibe and supports a number of options. Here are
 ```
 gtasks -ll
 ```
-**creates a new list called "list1"**
+**create a new list called "list1"**
 ```
 gtasks -al list1
 ```
@@ -68,23 +68,23 @@ gtasks -al list1
 ```
 gtasks -l list1 list2
 ```
-**adds a task with the title "hello world" to your default list**
+**add a task with the title "hello world" to your default list**
 ```
 gtasks -a -t "hello world"
 ```
-**edits task number 2, in list1, changing its title to "goodbye mars"**
+**edit task number 2, in list1, changing its title to "goodbye mars"**
 ```
 gtasks -l list1 -e 2 -t "goodbye mars"
 ```
-**deletes task 2 from list1**
+**delete task 2 from list1**
 ```
 gtasks -l list1 -d 2
 ```
-**marks task 1 in the default list as complete**
+**mark task 1 in the default list as complete**
 ```
 gtasks -c 1
 ```
-**edits task 1 in the default list, settings its due date to today**
+**edit task 1 in the default list, settings its due date to today**
 ```
 gtasks -e 1 -w today
 ```
@@ -101,7 +101,7 @@ to remove the due date for a task use th `-cw` option when editing the task: `gt
 ```
 gtasks -st
 ```
-**list *all( tasks in *all lists*.**
+**list all tasks in all lists**
 ```
 gtasks -L
 ```
