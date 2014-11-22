@@ -45,10 +45,15 @@ keychain -s gtasks_secret <Client secret>
 keychain -s gtasks_key <API key>
 ```
 
-
 ## Installation
 
     git clone git://github.com/diffsky/gtasks.git
+
+## First run
+
+The first time you run gtasks (without the help option) it will attempt to authenticate with the google api service.
+By default it will attempt to open a browser to allow you to confirm permissions. After confirmation it will attempt to
+redirect to ` http://localhost:8080`, so that port should be available. If instead you want to do this manually, pass the argument `--noauth_local_webserver`.
 
 ## Usage
 
