@@ -34,17 +34,16 @@ After the project is created, add the `Tasks API` service to it. Then in the
 click next and select "Installed application" and click "Create client ID".
 
 Back on the `API Access` tab you will see populated values for `Client ID`,
-`Client secret` and `API key`. Take a note of these values as you will use them with `keychain`:
+`Client secret` and `API key`. Take a note of these values as you will then need to populate
+these keys in your system keyring service. Internally, gtasks uses the [keyring package](https://pypi.python.org/pypi/keyring) for an independent way of interacting with the system keyring.
 
-    keychain -s gtasks_id <Client ID>
-    keychain -s gtasks_secret <Client secret>
-    keychain -s gtasks_key <API key>
-
-You will then need to populate these keys in your system keyring service. In OSX, for example, this is the
-keychain Access. I've created [keychain](https://github.com/diffsky/keychain) as a means of allowing OSX users
-a convenient way to add their gtasks api settings to the OSX keychain. Internally, gtasks uses the
-[keyring package](https://pypi.python.org/pypi/keyring) for an independent way of interacting with the
-system keyring.
+In OSX, for example, these keys need to be in the keychain Access. I've created [keychain](https://github.com/diffsky/keychain)
+as a means of allowing OSX users a convenient way to add their gtasks api settings to the OSX keychain:
+```
+keychain -s gtasks_id <Client ID>
+keychain -s gtasks_secret <Client secret>
+keychain -s gtasks_key <API key>
+```
 
 
 ## Installation
