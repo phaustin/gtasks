@@ -1,7 +1,6 @@
 # GTasks
 
-gtasks is a command line client for the [google tasks api](https://developers.google.com/google-apps/tasks/) written in python, aimed at OSX (for keychain integration).
-It was written as a way to learn python.
+gtasks is a command line client for the [google tasks api](https://developers.google.com/google-apps/tasks/) written in python, as a means of learning the language.
 
 ## Requirements
 
@@ -23,9 +22,6 @@ You may want to add it to your `.bashrc` file to make it more permanent:
 To switch to a different virtual environment you have to source its bin/activate.
 You'll find more details in the [pip documentation](http://www.pip-installer.org/en/latest/index.html)
 
-Next you should install [keychain](https://github.com/diffsky/keychain), which
-will later allow you to add your gtasks api settings to the OSX keychain.
-
 After that, is the google tasks api python client library:
 
     pip install google-api-python-client
@@ -43,6 +39,13 @@ Back on the `API Access` tab you will see populated values for `Client ID`,
     keychain -s <Client ID> gtasks_id
     keychain -s <Client secret> gtasks_secret
     keychain -s <API key> gtasks_key
+
+You will then need to populate these keys in your system keyring service. In OSX, for example, this is the
+keychain Access. I've created [keychain](https://github.com/diffsky/keychain) as a means of allowing OSX users
+a convenient way to add their gtasks api settings to the OSX keychain. Internally, gtasks uses the
+[keyring package](https://pypi.python.org/pypi/keyring) for an independent way of interacting with the
+system keyring.
+
 
 ## Installation
 
