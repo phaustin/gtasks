@@ -56,38 +56,39 @@ Assuming you have the `gtasks` file somewhere that's in your `$PATH`, then `gtas
 
 gtasks is designed to be very flexibe and supports a number of options. Here are some examples:
 
-    gtasks -ll
-
-lists all your task lists
-
-    gtasks -al list1
-
-creates a new list called "list1"
-
-    gtasks -l list1 list2
-
-lists all tasks in list1 and list2
-
-    gtasks -a -t "hello world"
-
-adds a task with the title "hello world" to your default list
-
-    gtasks -l list1 -e 2 -t "goodbye mars"
-
-edits task number 2, in list1, changing its title to "goodbye mars"
-
-    gtasks -l list1 -d 2
-
-deletes task 2 from list1
-
-    gtasks -c 1
-
-marks task 1 in the default list as complete
-
-    gtasks -e 1 -w today
-
-edits task 1 in the default list, settings its due date to today. Note that wherever
-there is a date format, gtasks supports these values:
+**lists all your task lists**
+```
+gtasks -ll
+```
+**creates a new list called "list1"**
+```
+gtasks -al list1
+```
+**lists all tasks in list1 and list2**
+```
+gtasks -l list1 list2
+```
+**adds a task with the title "hello world" to your default list**
+```
+gtasks -a -t "hello world"
+```
+**edits task number 2, in list1, changing its title to "goodbye mars"**
+```
+gtasks -l list1 -e 2 -t "goodbye mars"
+```
+**deletes task 2 from list1**
+```
+gtasks -l list1 -d 2
+```
+**marks task 1 in the default list as complete**
+```
+gtasks -c 1
+```
+**edits task 1 in the default list, settings its due date to today**
+```
+gtasks -e 1 -w today
+```
+Note that wherever there is a date format, gtasks supports these values:
 
  - yesterday, yes, today, tod, tomorrow, tom
  - year-month-day example: 2012-06-22
@@ -96,28 +97,30 @@ there is a date format, gtasks supports these values:
 
 to remove the due date for a task use th `-cw` option when editing the task: `gtasks -e 1 -cw`
 
-    gtasks -st
-
-list tasks in the default lists and show totals for complete and due
-
-    gtasks -L
-
-list *all( tasks in *all lists*. Note that you cannot take an action on tasks returned
+**list tasks in the default lists and show totals for complete and due**
+```
+gtasks -st
+```
+**list *all( tasks in *all lists*.**
+```
+gtasks -L
+```
+Note that you cannot take an action on tasks returned
 from the `-L` option as it is a collection of lists. If you wanted to update a task
 in a list returned by `-L` you should use `-l <list title>` to specify the actual list
 it belongs to.
 
-    gtasks -L -b
+**list all tasks in all lists, busting any local cache to ensure the latest data**
+```
+gtasks -L -b
+```
+**list all tasks in all lists, that are due before tomorrow and after today, don't show empty lists**
+```
+gtasks -L -sb tomorrow -sa today -dse
+```
+Essentially this shows all tasks due today.
 
-list all tasks in all lists, busting any local cache to ensure the latest data
-
-    gtasks -L -sb tomorrow -sa today -dse
-
-list all tasks in all lists, that are due before tomorrow and after today, don't
-show empty lists. Essentially this shows all tasks due today.
-
-
-And list gtasks that are due:
+**list gtasks that are due**
 ```
 gtasks -L -sdo -dse
 ```
