@@ -1,4 +1,4 @@
-# GTasks
+# [![gtasks](https://raw.githubusercontent.com/diffsky/gtasks/master/assets/gtasks-64.png)](https://github.com/diffsky/gtasks) GTasks
 
 gtasks is a command line client for the [google tasks api](https://developers.google.com/google-apps/tasks/) written in python, as a means of learning the language.
 
@@ -202,3 +202,6 @@ function parse_tasks {
  - support indented tasks
 
 
+---
+
+gtasks logo designed by [Katie Westbrook](http://thenounproject.com/katiewestbrook) from the [Noun Project](http://thenounproject.com/) :: Creative Commons – Attribution (CC BY 3.0)
