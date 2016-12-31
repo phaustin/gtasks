@@ -134,8 +134,9 @@ parser.add_argument('-U', dest="update_cache", action='store_true',
 
 opts = parser.parse_args()
 
+# from https://developers.google.com/google-apps/tasks/quickstart/python
 # If modifying these scopes, delete your previously saved credentials
-# at ~/.credentials/tasks-python-quickstart.json
+# at ~/.credentials/tasks-gtasks_cli.json
 SCOPES = 'https://www.googleapis.com/auth/tasks'
 CLIENT_SECRET_FILE = 'client_secrets_gtask_cli.json'
 APPLICATION_NAME = 'gtasks cli'
@@ -155,15 +156,10 @@ def get_credentials():
         os.makedirs(credential_dir)
     credential_path = os.path.join(credential_dir,
                                    'tasks-gtasks_cli.json')
-    print('credential_path: ',credential_path)
-
     store = Storage(credential_path)
     credentials = store.get()
-    #credentials=None
-    print('credentials are: ',credentials)
     if not credentials or credentials.invalid:
         flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
-        print('here is flow: ',flow)
         flow.user_agent = APPLICATION_NAME
         credentials = tools.run_flow(flow, store, opts)
         print('Storing credentials to ' + credential_path)
@@ -193,22 +189,17 @@ class GTasks:
         os.makedirs(_cache_directory)
 
     def __init__(self):
-        print('init Gtasks')
         if os.path.isfile(self._settings_file):
             self._settings = pickle.load( open(self._settings_file, "rb" ) )
         else:
-            print('top')
             self._settings = {}
             try:
-                print('prepare for call')
                 the_list = Google_Tasks().service.tasklists().get(tasklist='@default').execute()
-                print('through call')
                 self._settings['default_list'] = the_list['title']
-                print('inside Gtasks')
             except Exception as err:
                 if self.debug:
                     print(err['args'])
-                    print(err)
+                    traceback.print_tb(err)
                 self._feedback('Error, problem talking with google api')
                 sys.exit(1)
         self.default_list = self._settings['default_list']
@@ -225,9 +216,9 @@ class GTasks:
         pickle.dump(self._settings, open(self._settings_file, 'wb'))
 
     # output errors and statuses
-    def _feedback(self, string):
+    def _feedback(self, the_string):
         if self.silent != True:
-            print(string)
+            print(the_string)
 
     # get lists as a combination of cached and live
     def _get_lists(self, show=[], required_lists=[], use_cache=True):
@@ -781,7 +772,6 @@ class List:
             'due_sometime' : 0,
             'due_never' : 0}
         for task in self.tasks:
-            print('here is task: ',task)
             self.totals['total'] += 1
             if task.due_status is not 'none' and not task.complete:
                 if task.due_status != 'overdue':
@@ -875,7 +865,6 @@ class Task:
             self.due_date = str(due_date)
             due_in = (today_date - due_date)
             self.due_in_days = due_in.days
-            print('here is due_in_days: ',self.due_in_days)
             if self.due_in_days is None:
                 self.due_in_days = 0
             else:
@@ -906,17 +895,13 @@ class Task:
         )
         return local_date.date()
 
-# Class for handling connection to the Google Tasks api
-class Google_Tasks:
 
+class Google_Tasks:
+    # see https://developers.google.com/google-apps/tasks/quickstart/python
     def __init__(self):
         credentials=get_credentials()
-        print('here are credentials: ',credentials)
         http = credentials.authorize(httplib2.Http())
-        print('here is http: ',http)
         self.service = discovery.build('tasks', 'v1', http=http)
-        print('here is service: ',self.service)
-        print('exiting Google_Tasks')
         
 ### Opts args interpretation
 
@@ -1024,8 +1009,6 @@ task = {
 try:
     # Create the GTasks object
     ATask = GTasks()
-    a_list = Google_Tasks().service.tasklists().get(tasklist='@default').execute()
-    print('constructing list: ',a_list)
     # put GTasks into requested modes
     ATask.confirm = opts.confirm
     ATask.silent = opts.quiet
