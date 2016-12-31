@@ -19,21 +19,16 @@ from apiclient import discovery
 from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
+import traceback
 
-try:
-    import argparse
-    flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
-    print('here are flags: ',flags)
-except ImportError:
-    flags = None
+def make_hash(value):
+    return md5(str(value).encode('utf-8')).hexdigest()
 
 # Parse arguments
 parser = argparse.ArgumentParser(
     usage="gtasks [arg] arg1, arg\nwith no option, default task list is printed",
-        prog="gtasks 0.0.1")
-
-parser.add_argument('--noauth_local_webserver', dest="webserver", action='store_false',
-    help='validate credentials on command line only')
+    parents=[tools.argparser],
+    prog="gtasks 0.0.1")
 
 parser.add_argument('-i', dest="confirm", action='store_true',
     help='interactive mode, request confirmation for any changes')
@@ -164,15 +159,13 @@ def get_credentials():
 
     store = Storage(credential_path)
     credentials = store.get()
+    #credentials=None
     print('credentials are: ',credentials)
     if not credentials or credentials.invalid:
         flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
         print('here is flow: ',flow)
         flow.user_agent = APPLICATION_NAME
-        if flags:
-            credentials = tools.run_flow(flow, store, flags)
-        else: # Needed only for compatibility with Python 2.6
-            credentials = tools.run(flow, store)
+        credentials = tools.run_flow(flow, store, opts)
         print('Storing credentials to ' + credential_path)
     return credentials
 
@@ -204,6 +197,7 @@ class GTasks:
         if os.path.isfile(self._settings_file):
             self._settings = pickle.load( open(self._settings_file, "rb" ) )
         else:
+            print('top')
             self._settings = {}
             try:
                 print('prepare for call')
@@ -302,12 +296,12 @@ class GTasks:
         expired_lists = []
         # show hash used to identify list
         # lists stored as md5(title)-md5(show_hash)
-        show_hash = md5(str(show['data'])).hexdigest()
+        show_hash = make_hash(show['data'])
 
         if required_lists:
             missing_lists = required_lists[:]
             for title in required_lists:
-                title_hash = md5(str(title)).hexdigest()
+                title_hash = make_hash(title)
                 key = title_hash + '-' + show_hash
                 if key in cache_files:
                     cache_file_path = GTasks._cache_directory + key
@@ -352,7 +346,7 @@ class GTasks:
             return {'found' : [], 'missing' : required_lists}
 
         for the_list in lists_resources['items']:
-            all_lists[list['title']] = the_list
+            all_lists[the_list['title']] = the_list
 
         if required_lists:
             missing_lists = required_lists[:]
@@ -410,8 +404,8 @@ class GTasks:
 
     # generate a key (filename) for caching a list
     def _cache_key(self, title, show_data):
-        title_hash = md5(str(title)).hexdigest()
-        show_hash = md5(str(show_data)).hexdigest()
+        title_hash = make_hash(title)
+        show_hash = make_hash(show_data)
         key = title_hash + '-' + show_hash
         return key
 
@@ -424,7 +418,7 @@ class GTasks:
         cache_files = os.listdir(GTasks._cache_directory)
         if list_titles:
             for title in list_titles:
-                title_hash = md5(str(title)).hexdigest()
+                title_hash = make_hash(title)
                 for cache_file in cache_files:
                     if cache_file.find(title_hash) != -1:
                         os.remove(GTasks._cache_directory + cache_file)
@@ -787,6 +781,7 @@ class List:
             'due_sometime' : 0,
             'due_never' : 0}
         for task in self.tasks:
+            print('here is task: ',task)
             self.totals['total'] += 1
             if task.due_status is not 'none' and not task.complete:
                 if task.due_status != 'overdue':
@@ -847,10 +842,10 @@ class Task:
         self.resource = resource
         self.id = resource['id']
 
-        self.due_in_days = ''
+        self.due_in_days = None
         self.due_in_days_status = ''
         self.due_date=''
-        self.due_status = None
+        self.due_status = 'none'
 
         self.complete = False
         self.deleted = False
@@ -878,9 +873,10 @@ class Task:
         if not self.complete and 'due' in resource:
             due_date = self._convert_RFC_date(self.resource['due'])
             self.due_date = str(due_date)
-            due_in = str(abs(today_date - due_date))[0:-9]
-            self.due_in_days = due_in[0:due_in.find(' ')]
-            if self.due_in_days == '':
+            due_in = (today_date - due_date)
+            self.due_in_days = due_in.days
+            print('here is due_in_days: ',self.due_in_days)
+            if self.due_in_days is None:
                 self.due_in_days = 0
             else:
                 self.due_in_days = int(self.due_in_days)
@@ -920,6 +916,7 @@ class Google_Tasks:
         print('here is http: ',http)
         self.service = discovery.build('tasks', 'v1', http=http)
         print('here is service: ',self.service)
+        print('exiting Google_Tasks')
         
 ### Opts args interpretation
 
@@ -1028,8 +1025,7 @@ try:
     # Create the GTasks object
     ATask = GTasks()
     a_list = Google_Tasks().service.tasklists().get(tasklist='@default').execute()
-    print(a_list)
-    print('here is clase service: ',ATask.service)
+    print('constructing list: ',a_list)
     # put GTasks into requested modes
     ATask.confirm = opts.confirm
     ATask.silent = opts.quiet
@@ -1090,6 +1086,6 @@ except KeyboardInterrupt:
 except Exception as err:
     if opts.debug:
         print(err)
-        print('Unexpected Error')
+        traceback.print_tb(err)
     else:
         print('Error, unknown error, run with `--debug` for details')
