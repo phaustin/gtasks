@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # coding=utf-8
 
+from __future__ import print_function
 import os
 import getpass
 import argparse
@@ -14,10 +15,17 @@ import gflags
 import httplib2
 import shutil
 from hashlib import md5
-from apiclient.discovery import build
+from apiclient import discovery
+from oauth2client import client
+from oauth2client import tools
 from oauth2client.file import Storage
-from oauth2client.client import OAuth2WebServerFlow
-from oauth2client.tools import run
+
+try:
+    import argparse
+    flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
+    print('here are flags: ',flags)
+except ImportError:
+    flags = None
 
 # Parse arguments
 parser = argparse.ArgumentParser(
@@ -131,6 +139,43 @@ parser.add_argument('-U', dest="update_cache", action='store_true',
 
 opts = parser.parse_args()
 
+# If modifying these scopes, delete your previously saved credentials
+# at ~/.credentials/tasks-python-quickstart.json
+SCOPES = 'https://www.googleapis.com/auth/tasks'
+CLIENT_SECRET_FILE = 'client_secrets_gtask_cli.json'
+APPLICATION_NAME = 'gtasks cli'
+
+def get_credentials():
+    """Gets valid user credentials from storage.
+
+    If nothing has been stored, or if the stored credentials are invalid,
+    the OAuth2 flow is completed to obtain the new credentials.
+
+    Returns:
+        Credentials, the obtained credential.
+    """
+    home_dir = os.path.expanduser('~')
+    credential_dir = os.path.join(home_dir, '.credentials')
+    if not os.path.exists(credential_dir):
+        os.makedirs(credential_dir)
+    credential_path = os.path.join(credential_dir,
+                                   'tasks-gtasks_cli.json')
+    print('credential_path: ',credential_path)
+
+    store = Storage(credential_path)
+    credentials = store.get()
+    print('credentials are: ',credentials)
+    if not credentials or credentials.invalid:
+        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
+        print('here is flow: ',flow)
+        flow.user_agent = APPLICATION_NAME
+        if flags:
+            credentials = tools.run_flow(flow, store, flags)
+        else: # Needed only for compatibility with Python 2.6
+            credentials = tools.run(flow, store)
+        print('Storing credentials to ' + credential_path)
+    return credentials
+
 # Class for viewing and interacting with lists and tasks
 class GTasks:
     _bin = os.path.realpath(__file__)
@@ -155,17 +200,21 @@ class GTasks:
         os.makedirs(_cache_directory)
 
     def __init__(self):
+        print('init Gtasks')
         if os.path.isfile(self._settings_file):
             self._settings = pickle.load( open(self._settings_file, "rb" ) )
         else:
             self._settings = {}
             try:
-                list = Google_Tasks().service().tasklists().get(tasklist='@default').execute()
-                self._settings['default_list'] = list['title']
+                print('prepare for call')
+                the_list = Google_Tasks().service.tasklists().get(tasklist='@default').execute()
+                print('through call')
+                self._settings['default_list'] = the_list['title']
+                print('inside Gtasks')
             except Exception as err:
                 if self.debug:
-                    print err['args']
-                    print err
+                    print(err['args'])
+                    print(err)
                 self._feedback('Error, problem talking with google api')
                 sys.exit(1)
         self.default_list = self._settings['default_list']
@@ -184,7 +233,7 @@ class GTasks:
     # output errors and statuses
     def _feedback(self, string):
         if self.silent != True:
-            print string
+            print(string)
 
     # get lists as a combination of cached and live
     def _get_lists(self, show=[], required_lists=[], use_cache=True):
@@ -201,10 +250,10 @@ class GTasks:
             if self.debug:
                 if found_lists:
                     for list in found_lists:
-                        print '"' + list.resource['title'] + '" found in cache'
+                        print('"' + list.resource['title'] + '" found in cache')
                 if missing_lists:
                     for title in missing_lists:
-                        print '"' + title + '" missing from cache'
+                        print('"' + title + '" missing from cache')
 
         if missing_lists:
             # lists missing from cache, look for them on live
@@ -222,11 +271,11 @@ class GTasks:
             missing_lists = live_lists['missing']
             if self.debug:
                 if found_lists:
-                    for list in found_lists:
-                        print '"' + list.resource['title'] + '" found in api'
+                    for the_list in found_lists:
+                        print('"' + the_list.resource['title'] + '" found in api')
                 if missing_lists:
                     for title in missing_lists:
-                        print '"' + title + '" missing from api'
+                        print('"' + title + '" missing from api')
 
         if not required_lists:
             # if not in a required order, sort lists alphabetically
@@ -262,7 +311,7 @@ class GTasks:
                 key = title_hash + '-' + show_hash
                 if key in cache_files:
                     cache_file_path = GTasks._cache_directory + key
-                    found_lists.append(pickle.load( open(cache_file_path, "rb" ) ))
+                    found_the_lists.append(pickle.load( open(cache_file_path, "rb" ) ))
                     missing_lists.remove(title)
         else:
             missing_lists = []
@@ -274,12 +323,12 @@ class GTasks:
         # from the found lists, check if any have expired
         # currently we return the list anyway, updating it in the background
         cur_time = time.time()
-        for list in found_lists:
-            cache_file_path = GTasks._cache_directory + list.cache_key
+        for the_list in found_lists:
+            cache_file_path = GTasks._cache_directory + the_list.cache_key
             cache_time = cur_time - os.path.getmtime(cache_file_path)
             if cache_time > GTasks.TTL:
                 os.remove(cache_file_path)
-                expired_lists.append(list.resource['title'])
+                expired_lists.append(the_list.resource['title'])
 
         if expired_lists:
             # background update of the expired lists
@@ -294,16 +343,16 @@ class GTasks:
         live_lists = []
 
         try:
-            lists_resources = Google_Tasks().service().tasklists().list().execute()
+            lists_resources = Google_Tasks().service.tasklists().list().execute()
         except Exception as err:
             if self.debug:
-                print err['args']
-                print err
+                print(err['args'])
+                print(err)
             self._feedback('Error, problem talking with google api')
             return {'found' : [], 'missing' : required_lists}
 
-        for list in lists_resources['items']:
-            all_lists[list['title']] = list
+        for the_list in lists_resources['items']:
+            all_lists[list['title']] = the_list
 
         if required_lists:
             missing_lists = required_lists[:]
@@ -316,13 +365,13 @@ class GTasks:
             for title in all_lists:
                 live_lists.append(all_lists[title])
 
-        for list in live_lists:
-            found_lists.append(List(list, show))
+        for the_list in live_lists:
+            found_lists.append(List(the_list, show))
 
-        for list in found_lists:
+        for the_list in found_lists:
             # create list objects from the found lists and cache them
-            list.cache_key = self._cache_key(list.resource['title'], show['data'])
-            self._cache_list(list, list.cache_key)
+            the_list.cache_key = self._cache_key(the_list.resource['title'], show['data'])
+            self._cache_list(the_list, the_list.cache_key)
 
         return {'found' : found_lists, 'missing' : missing_lists}
 
@@ -350,8 +399,8 @@ class GTasks:
             arguments.extend(['-sdo'])
         if required_lists:
             arguments.extend(['-l'])
-            for list in required_lists:
-                arguments.extend([list])
+            for the_list in required_lists:
+                arguments.extend([the_list])
         else:
             arguments.extend(['-L'])
         command = [GTasks._bin]
@@ -428,7 +477,7 @@ class GTasks:
         self.confirm_or_exit('Add list: "' + list + '"')
         list = {'title': list}
         try:
-            result = Google_Tasks().service().tasklists().insert(body=list).execute()
+            result = Google_Tasks().service.tasklists().insert(body=list).execute()
             if result:
                 list = List(result, show)
                 list.cache_key = self._cache_key(list.resource['title'], show['data'])
@@ -439,8 +488,8 @@ class GTasks:
                 raise Exception()
         except Exception as err:
             if self.debug:
-                print err['args']
-                print err
+                print(err['args'])
+                print(err)
             self._feedback('Error, problem adding new list')
 
     # delete a list
@@ -448,13 +497,13 @@ class GTasks:
         self.confirm_or_exit('Delete list: "' + list + '"')
         list = self._get_list(show, [list])
         try:
-            result = Google_Tasks().service().tasklists().delete(tasklist=list.id).execute()
+            result = Google_Tasks().service.tasklists().delete(tasklist=list.id).execute()
             self.clear_cached_lists([list.resource['title']])
             self._feedback('List "' + list.resource['title'] + '" deleted')
         except Exception as err:
             if self.debug:
-                print err['args']
-                print err
+                print(err['args'])
+                print(err)
             self._feedback('Error, problem deleting list')
 
     # edit list title
@@ -468,14 +517,14 @@ class GTasks:
         list.resource['title'] = new_title
 
         try:
-            result = Google_Tasks().service().tasklists().delete(tasklist=list.id).execute()
+            result = Google_Tasks().service.tasklists().delete(tasklist=list.id).execute()
             self.clear_cached_lists([list.resource['title']])
             self._cache_list(list, list.cache_key)
             self._feedback('List "' + list.resource['title'] + '" updated')
         except Exception as err:
             if self.debug:
-                print err['args']
-                print err
+                print(err['args'])
+                print(err)
             self._feedback('Error, problem updating list')
 
 
@@ -489,17 +538,17 @@ class GTasks:
         task['due'] = task['date']
 
         try:
-            result = Google_Tasks().service().tasks().insert(tasklist=list.id, body=task).execute()
+            result = Google_Tasks().service.tasks().insert(tasklist=list.id, body=task).execute()
             if self.debug:
-                print result
+                print(result)
             if result['id']:
                 self._feedback('Task "' + task['title'] + '" added')
             else:
                 raise Exception()
         except Exception as err:
             if self.debug:
-                print err['args']
-                print err
+                print(err['args'])
+                print(err)
             self._feedback('There was an error adding the task')
         self.clear_cached_lists([list.resource['title']])
         self._background_update(show, [list.resource['title']])
@@ -535,15 +584,15 @@ class GTasks:
                 task.resource['due'] = edit_task['date']
 
         try:
-            result = Google_Tasks().service().tasks().update(tasklist=list.id, task=task.id, body=task.resource).execute()
+            result = Google_Tasks().service.tasks().update(tasklist=list.id, task=task.id, body=task.resource).execute()
             if result or task.deleted:
                 self._feedback('Task "' + result['title'] + '" ' + action)
             else:
                 raise Exception()
         except Exception as err:
             if self.debug:
-                print err['args']
-                print err
+                print(err['args'])
+                print(err)
             self._feedback('Error, there was a problem updating the task')
         self.clear_cached_lists([list.resource['title']])
         self._background_update(show, [list.resource['title']])
@@ -553,12 +602,12 @@ class GTasks:
     def clear_tasks(self, show, list):
         list = self._get_list(show, list)
         try:
-            Google_Tasks().service().tasks().clear(tasklist=list.id).execute()
+            Google_Tasks().service.tasks().clear(tasklist=list.id).execute()
             self._feedback('Completed tasks cleared from list "' + list.resource['title'] + '"')
         except Exception as err:
             if self.debug:
-                print err['args']
-                print err
+                print(err['args'])
+                print(err)
             self._feedback('Error, problem talking with google api')
         self.clear_cached_lists([list.resource['title']])
         self._background_update(show, [list.resource['title']])
@@ -585,20 +634,20 @@ class GTasks:
         lists = self._get_lists(show, required_lists, use_cache)['found']
         totals = self._combine_list_totals(lists)
 
-        print Task_Color.BAKRED + '[' + str(totals['overdue']) + ']' + \
+        print(Task_Color.BAKRED + '[' + str(totals['overdue']) + ']' + \
             Task_Color.BAKYEL + '[' + str(totals['due_today']) + ']' + \
             Task_Color.BAKBLU + '[' + str(totals['due_this_week']) + ']' + \
-            Task_Color.TXTDEF
+            Task_Color.TXTDEF)
 
     def show_lists(self, show, required_lists=[], use_cache = True):
         lists = self._get_lists(show, required_lists, use_cache)['found']
 
         for list in lists:
-            print list.resource['title']
+            print(list.resource['title'])
             if show['display']['totals']:
                 self._print_totals(list.totals)
         if show['display']['totals']:
-            print
+            print()
             self._print_totals(self._combine_list_totals(lists))
 
     # display tasks
@@ -632,11 +681,11 @@ class GTasks:
                 task_count = list.totals['overdue'] + list.totals['due_today']
             if not show['display']['empty_lists'] and task_count == 0:
                 continue
-            print
-            print list.resource['title']
-            print '-' * len(list.resource['title'])
+            print()
+            print(list.resource['title'])
+            print('-' * len(list.resource['title']))
             if task_count == 0:
-                print 'empty list'
+                print('empty list')
             if show_tasks and list.tasks:
                 for task in list.tasks:
                     if show['data']['due_only']:
@@ -661,26 +710,26 @@ class GTasks:
                             task_when = '➪ ' + Task_Color.status(
                                 task.due_status, task.complete,
                                 task.complete_days_status + ', ' + task.complete_date)
-                    print gutter, str(task.position) + '.' + status, \
-                        task.resource['title'], ' ' + task_when
+                    print(gutter, str(task.position) + '.' + status, \
+                        task.resource['title'], ' ' + task_when)
                     if show['display']['notes']:
                         if 'notes' in task.resource:
-                            print notes_gutter + task.resource['notes'].replace('\n', '\n' + notes_gutter)
+                            print(notes_gutter + task.resource['notes'].replace('\n', '\n' + notes_gutter))
 
-            print
+            print()
             if show['display']['totals'] and task_count > 0:
                 self._print_totals(list.totals)
-                print
+                print()
             shown_lists = shown_lists +1
 
         if show['display']['totals']:
             if int(shown_lists) > 1:
-                print 'OVERALL TOTALS'
+                print('OVERALL TOTALS')
                 self._print_totals(self._combine_list_totals(lists))
-                print
+                print()
 
         if show_tasks and shown_tasks == 0:
-            print 'no tasks found'
+            print('no tasks found')
 
 
 
@@ -770,7 +819,7 @@ class List:
         self.tasks = []
         tasks_resource = {'nextPageToken' : None}
         while 'nextPageToken' in tasks_resource:
-            tasks_resource = Google_Tasks().service().tasks().list(
+            tasks_resource = Google_Tasks().service.tasks().list(
                 tasklist=self.id,pageToken=tasks_resource['nextPageToken'],
                 showCompleted=self.show['data']['complete'],
                 showDeleted=self.show['data']['deleted'],
@@ -863,46 +912,15 @@ class Task:
 
 # Class for handling connection to the Google Tasks api
 class Google_Tasks:
-    _connection = False
-    _storage = Storage(GTasks._dat_file)
-    _credentials = _storage.get()
-    _gtasks_user = getpass.getuser()
-    _gtasks_key = keyring.get_password('gtasks_key', _gtasks_user)
 
     def __init__(self):
-        Google_Tasks._check_credentials()
-
-    # If the Credentials don't exist or are invalid, run through the authentication
-    # flow. The Storage object will ensure that if successful the good
-    # Credentials will get written back to a file.
-    @staticmethod
-    def _check_credentials():
-        if Google_Tasks._credentials is None or Google_Tasks._credentials.invalid == True:
-            gtasks_id = keyring.get_password('gtasks_id', Google_Tasks._gtasks_user)
-            gtasks_secret = keyring.get_password('gtasks_secret', Google_Tasks._gtasks_user)
-
-            FLOW = OAuth2WebServerFlow(
-                client_id=gtasks_id,
-                client_secret=gtasks_secret,
-                scope='https://www.googleapis.com/auth/tasks',
-                user_agent='gtasks/0.0.1')
-
-            FLAGS = gflags.FLAGS
-            FLAGS.auth_local_webserver = opts.webserver
-
-            Google_Tasks._credentials = run(FLOW, Google_Tasks._storage)
-
-    # Return a service object to use to talk to the api
-    def service(self):
-        if not Google_Tasks._connection:
-            http = httplib2.Http(GTasks._data_directory + '/http.cache')
-
-            http = Google_Tasks._credentials.authorize(http)
-            Google_Tasks._connection = build(serviceName='tasks', version='v1',
-                http=http, developerKey=Google_Tasks._gtasks_key)
-        return Google_Tasks._connection
-
-
+        credentials=get_credentials()
+        print('here are credentials: ',credentials)
+        http = credentials.authorize(httplib2.Http())
+        print('here is http: ',http)
+        self.service = discovery.build('tasks', 'v1', http=http)
+        print('here is service: ',self.service)
+        
 ### Opts args interpretation
 
 # Function to unique a list
@@ -1008,67 +1026,70 @@ task = {
 
 try:
     # Create the GTasks object
-    GTasks = GTasks()
+    ATask = GTasks()
+    a_list = Google_Tasks().service.tasklists().get(tasklist='@default').execute()
+    print(a_list)
+    print('here is clase service: ',ATask.service)
     # put GTasks into requested modes
-    GTasks.confirm = opts.confirm
-    GTasks.silent = opts.quiet
-    GTasks.debug = opts.debug
+    ATask.confirm = opts.confirm
+    ATask.silent = opts.quiet
+    ATask.debug = opts.debug
 
     amend_task = False
 
     if not opts.lists and not opts.show_lists and not opts.all_lists:
-        opts.lists = [GTasks.default_list]
+        opts.lists = [ATask.default_list]
     elif opts.all_lists:
         opts.lists = []
 
     if opts.update_cache:
         # Update the GTask cache and exit
-        GTasks.update_cached_lists(show, opts.lists)
+        ATask.update_cached_lists(show, opts.lists)
         sys.exit(0)
     elif opts.show_dashboard:
-        GTasks.show_dashboard(show, opts.lists, opts.bust_cache)
+        ATask.show_dashboard(show, opts.lists, opts.bust_cache)
     elif opts.add_list:
-        GTasks.add_list(show, opts.add_list)
+        ATask.add_list(show, opts.add_list)
     elif opts.edit_list:
-        GTasks.edit_list(show, opts.edit_list[0], opts.edit_list[1])
+        ATask.edit_list(show, opts.edit_list[0], opts.edit_list[1])
     elif opts.delete_list:
-        GTasks.delete_list(show, opts.delete_list)
+        ATask.delete_list(show, opts.delete_list)
     elif opts.clear_tasks == True:
         amend_task = True
-        GTasks.clear_tasks(show, opts.lists)
+        ATask.clear_tasks(show, opts.lists)
     elif opts.add_task:
         amend_task = True
-        GTasks.add_task(show, opts.lists, task)
+        ATask.add_task(show, opts.lists, task)
     elif opts.edit_task:
         amend_task = True
         task['position'] = opts.edit_task -1
-        GTasks.edit_task(show, opts.lists, task)
+        ATask.edit_task(show, opts.lists, task)
     elif opts.complete_task:
         amend_task = True
         task['position'] = opts.complete_task -1
         task['toggle_complete'] = True
-        GTasks.edit_task(show, opts.lists, task)
+        ATask.edit_task(show, opts.lists, task)
     elif opts.delete_task:
         amend_task = True
         task['position'] = opts.delete_task -1
         task['toggle_delete'] = True
-        GTasks.edit_task(show, opts.lists, task)
+        ATask.edit_task(show, opts.lists, task)
     elif opts.show_lists == True:
-        GTasks.show_lists(show, opts.lists, opts.bust_cache)
+        ATask.show_lists(show, opts.lists, opts.bust_cache)
     else:
-        GTasks.show_tasks(show, opts.lists, opts.bust_cache)
+        ATask.show_tasks(show, opts.lists, opts.bust_cache)
 
     if amend_task and opts.show_list_after:
         # show the list after an action has taken place
-        GTasks.show_tasks(show, opts.lists, False)
+        ATask.show_tasks(show, opts.lists, False)
 
 except KeyboardInterrupt:
       # do nothing here
-      print
+      print()
       pass
 except Exception as err:
     if opts.debug:
-        print err
-        print 'Unexpected Error'
+        print(err)
+        print('Unexpected Error')
     else:
-        print 'Error, unknown error, run with `--debug` for details'
+        print('Error, unknown error, run with `--debug` for details')
